@@ -22,7 +22,7 @@ export default new Router({
         {
           path: '/user',
           component: () => import('@/components/views/user'),
-          name: '用户管理'
+          name: '管理员管理'
         },
         {
           path: '/role',
@@ -30,9 +30,34 @@ export default new Router({
           name: '角色管理'
         },
         {
+          path: '/sort',
+          component: () => import('@/components/views/sort'),
+          name: '商品分类'
+        },
+        {
+          path: '/specs',
+          component: () => import('@/components/views/specs'),
+          name: '商品规格'
+        },
+        {
           path: '/goods',
           component: () => import('@/components/views/goods'),
           name: '商品管理'
+        },
+        {
+          path: '/member',
+          component: () => import('@/components/views/member'),
+          name: '会员管理'
+        },
+        {
+          path: '/banner',
+          component: () => import('@/components/views/banner'),
+          name: '轮播图管理'
+        },
+        {
+          path: '/seck',
+          component: () => import('@/components/views/seck'),
+          name: '限时秒杀管理'
         },
         {
           path: '/home',

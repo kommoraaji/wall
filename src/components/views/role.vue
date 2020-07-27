@@ -20,7 +20,6 @@
             default-expand-all
             node-key="id"
             ref="tree"
-            highlight-current
             :props="defaultProps"
           ></el-tree>
         </el-form-item>
@@ -53,7 +52,7 @@
       </el-table-column>
       <el-table-column label="操作">
         <template slot-scope="item">
-          <el-button size="mini" type="primary" @click="update">编辑</el-button>
+          <el-button size="mini" type="primary" @click="update(item.row.id)">编辑</el-button>
           <el-button size="mini" type="danger" @click="del(item.row.id)">删除</el-button>
         </template>
       </el-table-column>
@@ -67,7 +66,7 @@ import {
   getRoleAdd,
   getRoleInfo,
   getRoleEdit,
-  getRoleDelete
+  getRoleDelete,
 } from "../../uitl/axios";
 //调取辅助性函数
 import { mapActions, mapGetters } from "vuex";
@@ -80,7 +79,7 @@ export default {
       formInfo: {
         rolename: "",
         menus: "",
-        status: "1"
+        status: "1",
       },
       enditId: 0,
       formLabelWidth: "120px",
@@ -88,13 +87,13 @@ export default {
       rules: {
         rolename: [
           { required: true, message: "请输入角色名称", trigger: "blur" },
-          { min: 2, max: 6, message: "长度在 2 到 6 个字符", trigger: "blur" }
-        ]
+          { min: 2, max: 6, message: "长度在 2 到 6 个字符", trigger: "blur" },
+        ],
       },
       defaultProps: {
         children: "children",
-        label: "title"
-      }
+        label: "title",
+      },
     };
   },
   methods: {
@@ -109,12 +108,11 @@ export default {
     update(id) {
       this.dialogFormVisible = true;
       this.isadd = false;
-      getRoleInfo({ id }).then(res => {
+      getRoleInfo({ id }).then((res) => {
         if (res.data.code == 200) {
           console.log(res.data);
-          // this.formInfo = res.data.list;
-          // this.formInfo.type = this.formInfo.type.toString();
-          // this.formInfo.status = this.formInfo.status.toString();
+          this.formInfo = res.data.list;
+          this.formInfo.status = this.formInfo.status.toString();
         }
       });
     },
@@ -123,10 +121,10 @@ export default {
       this.$confirm("确定删除该条数据吗", "提示", {
         confirmButtonText: "确定",
         cancelButtonText: "取消",
-        type: "warning"
+        type: "warning",
       })
         .then(() => {
-          getRoleDelete({ id }).then(res => {
+          getRoleDelete({ id }).then((res) => {
             if (res.data.code == 200) {
               this.$message.success(res.data.msg);
               this.getActionRole();
@@ -138,19 +136,19 @@ export default {
         .catch(() => {
           this.$message({
             type: "info",
-            message: "已取消删除"
+            message: "已取消删除",
           });
         });
     },
     //确定添加或者更新
     subInfo(formName) {
-      this.$refs[formName].validate(valid => {
+      this.$refs[formName].validate((valid) => {
         if (valid) {
           if (this.isadd) {
             this.formInfo.menus = this.$refs.tree.getCheckedKeys().join(",");
             // console.log(this.formInfo);
             //调取添加接口
-            getRoleAdd(this.formInfo).then(res => {
+            getRoleAdd(this.formInfo).then((res) => {
               if (res.data.code == 200) {
                 //关闭弹窗
                 this.dialogFormVisible = false;
@@ -167,7 +165,7 @@ export default {
             let data = this.formInfo;
             data.id = this.enditId;
             //调取更新接口
-            getRoleEdit(data).then(res => {
+            getRoleEdit(data).then((res) => {
               if (res.data.code == 200) {
                 //关闭弹窗
                 this.dialogFormVisible = false;
@@ -196,20 +194,20 @@ export default {
       this.formInfo = {
         rolename: "",
         menus: "",
-        status: "1"
+        status: "1",
       };
       this.$refs.tree.setCheckedKeys([]);
-    }
+    },
   },
   computed: {
-    ...mapGetters(["getStateRole", "getStateMenu"])
+    ...mapGetters(["getStateRole", "getStateMenu"]),
   },
   mounted() {
     this.getActionRole();
   },
   components: {
-    breadCrumb
-  }
+    breadCrumb,
+  },
 };
 </script>
 

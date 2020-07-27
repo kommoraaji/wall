@@ -5,64 +5,68 @@
     <!-- 弹出层 -->
     <el-button type="primary" size="small" class="btn" @click="add">添加</el-button>
     <el-dialog
-      :title="isadd ? '添加菜单':'编辑菜单'"
+      :title="isadd ? '添加商品分类':'编辑商品分类'"
       :visible.sync="dialogFormVisible"
       :before-close="cancel"
     >
-      <el-form :model="formInfo" :rules="rules" ref="ruleForm">
-        <el-form-item label="菜单名称" prop="title" :label-width="formLabelWidth">
-          <el-input v-model="formInfo.title"></el-input>
-        </el-form-item>
-        <el-form-item label="上级菜单" prop="pid" :label-width="formLabelWidth" placeholder="请选择菜单">
-          <el-select v-model="formInfo.pid" placeholder="请选择">
-            <el-option label="顶级菜单" :value="0">顶级菜单</el-option>
+      <el-form :model="cateInfo" :rules="rules" ref="cateInfo">
+        <el-form-item label="上级分类" prop="pid" :label-width="formLabelWidth" placeholder="请选择分类">
+          <el-select v-model="cateInfo.pid" placeholder="请选择">
+            <el-option label="顶级分类" :value="0">顶级分类</el-option>
             <el-option
-              v-for="item in getStateMenu"
+              v-for="item in getStateCate"
               :key="item.id"
-              :label="item.title"
+              :label="item.catename"
               :value="item.id"
-            >{{item.title}}</el-option>
+            >{{item.catename}}</el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="菜单类型" :label-width="formLabelWidth">
-          <el-radio :disabled="formInfo.pid!=0" v-model="formInfo.type" label="1">目录</el-radio>
-          <el-radio :disabled="formInfo.pid==0" v-model="formInfo.type" label="2">菜单</el-radio>
+        <el-form-item label="分类名称" prop="catename" :label-width="formLabelWidth">
+          <el-input v-model="cateInfo.catename"></el-input>
         </el-form-item>
-        <el-form-item
-          :disabled="formInfo.pid!=0"
-          v-if="formInfo.type == 1"
-          label="菜单图标"
-          :label-width="formLabelWidth"
-        >
-          <el-input :disabled="formInfo.pid==0" v-model="formInfo.icon"></el-input>
-        </el-form-item>
-        <el-form-item v-if="formInfo.type == 2" label="菜单地址" :label-width="formLabelWidth">
-          <el-input v-model="formInfo.url"></el-input>
+        <el-form-item label="图片" :label-width="formLabelWidth">
+          <el-upload
+            action="#"
+            list-type="picture-card"
+            :on-preview="handlePreview"
+            :on-remove="handleRemove"
+            :file-list="filelist"
+            :auto-upload="false"
+            :on-change="changeInfo"
+          >
+            <!-- :auto-upload="false"  取消自动上传 -->
+            <i class="el-icon-plus"></i>
+          </el-upload>
+          <el-dialog :visible.sync="dialogVisible">
+            <img width="100%" :src="dialogImageUrl" alt />
+          </el-dialog>
         </el-form-item>
         <el-form-item label="状态" :label-width="formLabelWidth">
-          <el-radio v-model="formInfo.status" label="1">启用</el-radio>
-          <el-radio v-model="formInfo.status" label="2">禁用</el-radio>
+          <el-radio v-model="cateInfo.status" label="1">启用</el-radio>
+          <el-radio v-model="cateInfo.status" label="2">禁用</el-radio>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="cancel">取 消</el-button>
-        <el-button v-if="isadd" type="primary" @click="subInfo('ruleForm')">确 定</el-button>
-        <el-button v-else type="primary" @click="subInfo('ruleForm')">更 新</el-button>
+        <el-button v-if="isadd" type="primary" @click="subInfo('cateInfo')">确 定</el-button>
+        <el-button v-else type="primary" @click="subInfo('cateInfo')">更 新</el-button>
       </div>
     </el-dialog>
     <!-- 表格 -->
     <el-table
-      :data="getStateMenu"
+      :data="getStateCate"
       border
       style="width: 100%"
       row-key="id"
       :tree-props="{children: 'children'}"
     >
-      <el-table-column prop="id" label="菜单编号"></el-table-column>
-      <el-table-column prop="title" label="菜单名称"></el-table-column>
-      <el-table-column prop="pid" label="上级菜单"></el-table-column>
-      <el-table-column prop="icon" label="菜单图标"></el-table-column>
-      <el-table-column prop="url" label="菜单地址"></el-table-column>
+      <el-table-column prop="id" label="分类编号"></el-table-column>
+      <el-table-column prop="catename" label="分类名称"></el-table-column>
+      <el-table-column prop="img" label="图片">
+        <template slot-scope="item">
+          <img class="imgInfo" :src="'http://localhost:3000/'+item.row.img" alt />
+        </template>
+      </el-table-column>
       <el-table-column prop="status" label="状态">
         <template slot-scope="item">
           <el-tag v-if="item.row.status==1" type="success">启用</el-tag>
@@ -80,12 +84,12 @@
 </template>
 
 <script>
-//引入菜单接口
+//引入分类接口
 import {
-  getMenuAdd,
-  getMenuInfo,
-  getMenuEdit,
-  getMenuDelete,
+  getCateAdd,
+  getCateInfo,
+  getCateEdit,
+  getCateDelete,
 } from "../../uitl/axios";
 //调取辅助性函数
 import { mapActions, mapGetters } from "vuex";
@@ -94,30 +98,44 @@ import breadCrumb from "../common/breadcrumb";
 export default {
   data() {
     return {
+      filelist: [],
+      dialogImageUrl: "",
+      uploadImg: "", //上传后的图片地址
+      dialogVisible: false,
       dialogFormVisible: false,
-      formInfo: {
+      cateInfo: {
         pid: "",
-        title: "",
-        icon: "",
-        url: "",
-        type: "1", //1目录2菜单
+        catename: "",
+        img: "",
         status: "1",
       },
       enditId: 0,
       formLabelWidth: "120px",
       isadd: true,
       rules: {
-        title: [
-          { required: true, message: "请输入菜单名称", trigger: "blur" },
+        catename: [
+          { required: true, message: "请输入分类名称", trigger: "blur" },
           { min: 2, max: 6, message: "长度在 2 到 6 个字符", trigger: "blur" },
         ],
-        pid: [{ required: true, message: "请选择所属菜单", trigger: "blur" }],
+        pid: [{ required: true, message: "请选择所属分类", trigger: "blur" }],
       },
     };
   },
   methods: {
+    //删除图片
+    handleRemove(file, fileList) {
+      console.log(file, fileList);
+    },
+    //图片放大
+    handlePreview(file) {
+      this.dialogImageUrl = file.url;
+      this.dialogVisible = true;
+    },
+    changeInfo(file) {
+      this.uploadImg = file.raw;
+    },
     //获取列表
-    ...mapActions(["getActionMenu"]),
+    ...mapActions(["getActionCate"]),
     //添加
     add() {
       this.dialogFormVisible = true;
@@ -127,12 +145,11 @@ export default {
     update(id) {
       this.dialogFormVisible = true;
       this.isadd = false;
-      getMenuInfo({ id }).then((res) => {
+      getCateInfo({ id }).then((res) => {
         if (res.data.code == 200) {
-          // console.log(res.data);
-          this.formInfo = res.data.list;
-          this.formInfo.type = this.formInfo.type.toString();
-          this.formInfo.status = this.formInfo.status.toString();
+          console.log(res.data);
+          this.cateInfo = res.data.list;
+          this.cateInfo.status = this.cateInfo.status.toString();
         }
       });
     },
@@ -144,10 +161,10 @@ export default {
         type: "warning",
       })
         .then(() => {
-          getMenuDelete({ id }).then((res) => {
+          getCateDelete({ id }).then((res) => {
             if (res.data.code == 200) {
               this.$message.success(res.data.msg);
-              this.getActionMenu();
+              this.getActionCate();
             } else {
               this.$message.error(res.data.msg);
             }
@@ -163,14 +180,20 @@ export default {
     subInfo(formName) {
       this.$refs[formName].validate((valid) => {
         if (valid) {
+          let data = this.cateInfo;
+          let file = new FormData();
+          for (let i in data) {
+            file.append(i, data[i]);
+          }
+          file.append("img", this.uploadImg);
           if (this.isadd) {
             //调取添加接口
-            getMenuAdd(this.formInfo).then((res) => {
+            getCateAdd(file).then((res) => {
               if (res.data.code == 200) {
                 //关闭弹窗
                 this.dialogFormVisible = false;
                 this.$message.success(res.data.msg);
-                this.getActionMenu();
+                this.getActionCate();
                 this.reset();
               } else if (res.data.code == 500) {
                 this.$message.warning(res.data.msg);
@@ -179,15 +202,15 @@ export default {
               }
             });
           } else {
-            let data = this.formInfo;
+            let data = this.cateInfo;
             data.id = this.enditId;
             //调取更新接口
-            getMenuEdit(data).then((res) => {
+            getCateEdit(data).then((res) => {
               if (res.data.code == 200) {
                 //关闭弹窗
                 this.dialogFormVisible = false;
                 this.$message.success(res.data.msg);
-                this.getActionMenu();
+                this.getActionCate();
                 this.reset();
               } else if (res.data.code == 500) {
                 this.$message.warning(res.data.msg);
@@ -208,21 +231,20 @@ export default {
       this.reset();
     },
     reset() {
-      this.formInfo = {
+      this.dialogImageUrl = "";
+      this.cateInfo = {
         pid: "",
-        tit: "",
-        icon: "",
-        url: "",
-        type: "1",
+        catename: "",
+        img: "",
         status: "1",
       };
     },
   },
   computed: {
-    ...mapGetters(["getStateMenu"]),
+    ...mapGetters(["getStateCate"]),
   },
   mounted() {
-    this.getActionMenu();
+    this.getActionCate();
   },
   components: {
     breadCrumb,
@@ -241,5 +263,9 @@ export default {
 
 .el-input {
   width: 85%;
+}
+
+.imgInfo {
+  width: 100px;
 }
 </style>
